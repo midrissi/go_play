@@ -19,6 +19,29 @@ A flexible Go CLI tool for fetching real-time kline (candlestick) data from mult
 
 ## Installation
 
+### Option 1: Docker (Recommended)
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd binance-go
+```
+
+2. Build and run with Docker:
+```bash
+# Build Docker image
+make docker-build
+
+# Run interactively
+make docker-run
+
+# Run with specific exchange
+make docker-run-binance
+make docker-run-hyperliquid
+```
+
+### Option 2: Local Build
+
 1. Clone the repository:
 ```bash
 git clone <repository-url>
@@ -27,17 +50,54 @@ cd binance-go
 
 2. Install dependencies:
 ```bash
-go mod tidy
+make deps
+# or manually: go mod tidy
 ```
 
 3. Build the application:
 ```bash
-go build -o binance-go
+make build
+# or manually: go build -o binance-go
 ```
 
 ## Usage
 
-### Basic Usage
+### Using Make Commands (Recommended)
+
+The project includes convenient Make targets for common operations:
+
+```bash
+# Local development
+make run                    # Run with default settings
+make run-binance           # Run with Binance example
+make run-hyperliquid       # Run with Hyperliquid example
+
+# Docker usage
+make docker-run            # Run Docker container interactively
+make docker-run-binance    # Run Docker with Binance config
+make docker-run-hyperliquid # Run Docker with Hyperliquid config
+make docker-run-detached   # Run Docker container in background
+make docker-logs           # View Docker container logs
+make docker-stop           # Stop Docker container
+make docker-clean          # Clean up Docker resources
+
+# Development
+make test                  # Run tests
+make test-coverage         # Run tests with coverage
+make fmt                   # Format code
+make lint                  # Lint code
+make clean                 # Clean build artifacts
+
+# Cross-platform builds
+make build-linux           # Build for Linux
+make build-windows         # Build for Windows
+make build-macos           # Build for macOS
+
+# Show all available targets
+make help
+```
+
+### Direct Binary Usage
 
 ```bash
 # Stream BTCUSDT 1-minute klines from Binance
@@ -185,23 +245,104 @@ The application includes comprehensive error handling and resilient connections:
 - **Event Handlers**: Customizable handlers for connect/disconnect/error events
 - **Thread-Safe**: Concurrent access protection with mutexes
 
+## Docker
+
+The project includes comprehensive Docker support with a multi-stage build for optimal image size and security.
+
+### Docker Features
+
+- **Multi-stage Build**: Optimized for size and security
+- **Non-root User**: Runs with minimal privileges
+- **Alpine Linux**: Minimal base image for security
+- **Health Checks**: Built-in container health monitoring
+- **Configurable**: Supports all command-line options
+
+### Docker Usage
+
+```bash
+# Build the Docker image
+make docker-build
+
+# Run interactively (shows help by default)
+make docker-run
+
+# Run with specific configurations
+make docker-run-binance
+make docker-run-hyperliquid
+
+# Run in background
+make docker-run-detached
+
+# View logs
+make docker-logs
+
+# Stop container
+make docker-stop
+
+# Clean up everything
+make docker-clean
+```
+
+### Docker Image Details
+
+- **Base Image**: Alpine Linux (latest)
+- **Go Version**: 1.25
+- **User**: Non-root (`appuser`)
+- **Working Directory**: `/app`
+- **Exposed Port**: 8080 (for future web interface)
+- **Health Check**: Built-in application health monitoring
+
 ## Development
+
+### Prerequisites
+
+- Go 1.25 or later
+- Docker (optional, for containerized development)
+- Make (for using Make targets)
 
 ### Running Tests
 
 ```bash
-go test ./...
+make test
+# or manually: go test ./...
+
+# With coverage
+make test-coverage
+# or manually: go test -cover ./...
+```
+
+### Code Quality
+
+```bash
+# Format code
+make fmt
+# or manually: go fmt ./...
+
+# Lint code
+make lint
+# or manually: golangci-lint run
 ```
 
 ### Building for Different Platforms
 
 ```bash
-# Linux
+# Using Make targets
+make build-linux    # Build for Linux
+make build-windows  # Build for Windows
+make build-macos    # Build for macOS
+
+# Manual cross-compilation
 GOOS=linux GOARCH=amd64 go build -o binance-go-linux
-
-# Windows
 GOOS=windows GOARCH=amd64 go build -o binance-go.exe
-
-# macOS
 GOOS=darwin GOARCH=amd64 go build -o binance-go-macos
 ```
+
+### Development Workflow
+
+1. **Make changes** to the code
+2. **Format code**: `make fmt`
+3. **Run tests**: `make test`
+4. **Lint code**: `make lint`
+5. **Build locally**: `make build`
+6. **Test locally**: `make run`
+7. **Test with Docker**: `make docker-run`
