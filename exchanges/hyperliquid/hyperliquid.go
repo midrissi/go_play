@@ -94,11 +94,14 @@ func (h *HyperliquidExchange) StreamCandles(ctx context.Context, symbols []strin
 // subscribeToStreams sends subscription messages to Hyperliquid
 func (h *HyperliquidExchange) subscribeToStreams(symbols []string, interval string) {
 	for _, symbol := range symbols {
+		// Convert symbol format (BTCUSD -> BTC)
+		hyperliquidSymbol := h.convertSymbolToHyperliquid(symbol)
+
 		subscribeMsg := map[string]interface{}{
 			"method": "subscribe",
 			"subscription": map[string]interface{}{
 				"type":     "candle",
-				"coin":     symbol,
+				"coin":     hyperliquidSymbol,
 				"interval": h.convertInterval(interval),
 			},
 		}
@@ -106,7 +109,7 @@ func (h *HyperliquidExchange) subscribeToStreams(symbols []string, interval stri
 		if err := h.ws.WriteJSON(subscribeMsg); err != nil {
 			fmt.Printf("⚠️  Failed to subscribe to %s: %v\n", symbol, err)
 		} else {
-			fmt.Printf("📡 Subscribed to %s candle stream\n", symbol)
+			fmt.Printf("📡 Subscribed to %s (%s) candle stream\n", symbol, hyperliquidSymbol)
 		}
 	}
 }
@@ -119,9 +122,9 @@ func (h *HyperliquidExchange) handleMessage(message []byte, handler exchanges.Ca
 	}
 
 	// Check if this is candle data
-	if data, ok := response["data"].(map[string]interface{}); ok {
-		if candleData, ok := data["candle"].(map[string]interface{}); ok {
-			candle := h.parseCandle(candleData)
+	if channel, ok := response["channel"].(string); ok && channel == "candle" {
+		if data, ok := response["data"].(map[string]interface{}); ok {
+			candle := h.parseCandle(data)
 			if candle.Symbol != "" {
 				handler(candle)
 			}
@@ -135,43 +138,47 @@ func (h *HyperliquidExchange) handleMessage(message []byte, handler exchanges.Ca
 func (h *HyperliquidExchange) parseCandle(data map[string]interface{}) exchanges.Candle {
 	candle := exchanges.Candle{}
 
-	if symbol, ok := data["coin"].(string); ok {
+	// Parse symbol (s field)
+	if symbol, ok := data["s"].(string); ok {
 		candle.Symbol = symbol
 	}
 
-	if startTime, ok := data["startTime"].(float64); ok {
+	// Parse timestamps (t = start time, T = end time)
+	if startTime, ok := data["t"].(float64); ok {
 		candle.OpenTime = time.Unix(int64(startTime)/1000, 0)
 	}
 
-	if endTime, ok := data["endTime"].(float64); ok {
+	if endTime, ok := data["T"].(float64); ok {
 		candle.CloseTime = time.Unix(int64(endTime)/1000, 0)
 	}
 
-	if open, ok := data["open"].(string); ok {
+	// Parse prices (o = open, h = high, l = low, c = close)
+	if open, ok := data["o"].(string); ok {
 		if val, err := strconv.ParseFloat(open, 64); err == nil {
 			candle.Open = val
 		}
 	}
 
-	if high, ok := data["high"].(string); ok {
+	if high, ok := data["h"].(string); ok {
 		if val, err := strconv.ParseFloat(high, 64); err == nil {
 			candle.High = val
 		}
 	}
 
-	if low, ok := data["low"].(string); ok {
+	if low, ok := data["l"].(string); ok {
 		if val, err := strconv.ParseFloat(low, 64); err == nil {
 			candle.Low = val
 		}
 	}
 
-	if close, ok := data["close"].(string); ok {
+	if close, ok := data["c"].(string); ok {
 		if val, err := strconv.ParseFloat(close, 64); err == nil {
 			candle.Close = val
 		}
 	}
 
-	if volume, ok := data["volume"].(string); ok {
+	// Parse volume (v field)
+	if volume, ok := data["v"].(string); ok {
 		if val, err := strconv.ParseFloat(volume, 64); err == nil {
 			candle.Volume = val
 		}
@@ -223,12 +230,17 @@ func (h *HyperliquidExchange) ValidateSymbol(symbol string) error {
 		return fmt.Errorf("symbol cannot be empty")
 	}
 
-	// Basic validation - symbol should be uppercase and not contain USDT
-	if strings.Contains(strings.ToUpper(symbol), "USDT") {
-		return fmt.Errorf("Hyperliquid symbols should not contain USDT")
+	// Convert to Hyperliquid format and check if it's supported
+	hyperliquidSymbol := h.convertSymbolToHyperliquid(symbol)
+	supportedSymbols, _ := h.GetSupportedSymbols()
+
+	for _, supported := range supportedSymbols {
+		if hyperliquidSymbol == supported {
+			return nil
+		}
 	}
 
-	return nil
+	return fmt.Errorf("unsupported symbol: %s (converted to %s). Supported symbols: %v", symbol, hyperliquidSymbol, supportedSymbols)
 }
 
 // ValidateInterval checks if an interval is valid for Hyperliquid
@@ -240,4 +252,15 @@ func (h *HyperliquidExchange) ValidateInterval(interval string) error {
 		}
 	}
 	return fmt.Errorf("unsupported interval: %s. Supported intervals: %v", interval, supported)
+}
+
+// convertSymbolToHyperliquid converts symbol format from BTCUSD to BTC
+func (h *HyperliquidExchange) convertSymbolToHyperliquid(symbol string) string {
+	// Remove common suffixes
+	symbol = strings.TrimSuffix(symbol, "USDT")
+	symbol = strings.TrimSuffix(symbol, "USD")
+	symbol = strings.TrimSuffix(symbol, "BUSD")
+
+	// Convert to uppercase
+	return strings.ToUpper(symbol)
 }
