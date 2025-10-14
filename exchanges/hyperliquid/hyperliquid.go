@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"binance-go/exchanges"
-	"binance-go/websocket"
+	"exchange-relayer/exchanges"
+	"exchange-relayer/websocket"
 )
 
 // HyperliquidExchange implements the Exchange interface for Hyperliquid

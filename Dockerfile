@@ -17,7 +17,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o binance-go .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o exchange-relayer .
 
 # Final stage - minimal image
 FROM alpine:latest
@@ -33,10 +33,10 @@ RUN addgroup -g 1001 -S appgroup && \
 WORKDIR /app
 
 # Copy binary from builder stage
-COPY --from=builder /app/binance-go .
+COPY --from=builder /app/exchange-relayer .
 
 # Change ownership to non-root user and make executable
-RUN chown appuser:appgroup binance-go && chmod +x binance-go
+RUN chown appuser:appgroup exchange-relayer && chmod +x exchange-relayer
 
 # Switch to non-root user
 USER appuser
@@ -45,9 +45,9 @@ USER appuser
 EXPOSE 8080
 
 # Set default command
-ENTRYPOINT ["./binance-go"]
+ENTRYPOINT ["./exchange-relayer"]
 CMD ["--help"]
 
 # Health check (optional - can be customized)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD ./binance-go --help > /dev/null || exit 1
+    CMD ./exchange-relayer --help > /dev/null || exit 1

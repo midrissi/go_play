@@ -1,4 +1,4 @@
-# Binance Go - Multi-Exchange Candle Streamer
+# Exchange Relayer - Multi-Exchange Candle Streamer
 
 A flexible Go CLI tool for fetching real-time candle (candlestick) data from multiple cryptocurrency exchanges.
 
@@ -24,7 +24,7 @@ A flexible Go CLI tool for fetching real-time candle (candlestick) data from mul
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd binance-go
+cd exchange-relayer
 ```
 
 2. Build and run with Docker:
@@ -45,7 +45,7 @@ make docker-run-hyperliquid
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd binance-go
+cd exchange-relayer
 ```
 
 2. Install dependencies:
@@ -57,7 +57,7 @@ make deps
 3. Build the application:
 ```bash
 make build
-# or manually: go build -o binance-go
+# or manually: go build -o exchange-relayer
 ```
 
 ## Usage
@@ -101,13 +101,13 @@ make help
 
 ```bash
 # Stream BTCUSDT 1-minute candles from Binance
-./binance-go --exchange binance --symbols BTCUSDT --interval 1m
+./exchange-relayer --exchange binance --symbols BTCUSDT --interval 1m
 
 # Stream multiple symbols
-./binance-go --exchange binance --symbols BTCUSDT,ETHUSDT,BNBUSDT --interval 5m
+./exchange-relayer --exchange binance --symbols BTCUSDT,ETHUSDT,BNBUSDT --interval 5m
 
 # Use Hyperliquid exchange
-./binance-go --exchange hyperliquid --symbols BTC,ETH,SOL --interval 1h
+./exchange-relayer --exchange hyperliquid --symbols BTC,ETH,SOL --interval 1h
 ```
 
 ### Command Line Options
@@ -120,14 +120,14 @@ make help
 
 ```bash
 # Binance examples
-./binance-go -e binance -s BTCUSDT -i 1m
-./binance-go -e binance -s BTCUSDT,ETHUSDT -i 5m
-./binance-go -e binance -s BTCUSDT -i 1h
+./exchange-relayer -e binance -s BTCUSDT -i 1m
+./exchange-relayer -e binance -s BTCUSDT,ETHUSDT -i 5m
+./exchange-relayer -e binance -s BTCUSDT -i 1h
 
 # Hyperliquid examples
-./binance-go -e hyperliquid -s BTC -i 1m
-./binance-go -e hyperliquid -s BTC,ETH,SOL -i 15m
-./binance-go -e hyperliquid -s BTC -i 1d
+./exchange-relayer -e hyperliquid -s BTC -i 1m
+./exchange-relayer -e hyperliquid -s BTC,ETH,SOL -i 15m
+./exchange-relayer -e hyperliquid -s BTC -i 1d
 ```
 
 ## Architecture
@@ -175,7 +175,7 @@ Example for a new exchange:
 ```go
 package newexchange
 
-import "binance-go/exchanges"
+import "exchange-relayer/exchanges"
 
 type NewExchange struct {
     // exchange-specific fields
@@ -332,9 +332,9 @@ make build-windows  # Build for Windows
 make build-macos    # Build for macOS
 
 # Manual cross-compilation
-GOOS=linux GOARCH=amd64 go build -o binance-go-linux
-GOOS=windows GOARCH=amd64 go build -o binance-go.exe
-GOOS=darwin GOARCH=amd64 go build -o binance-go-macos
+GOOS=linux GOARCH=amd64 go build -o exchange-relayer-linux
+GOOS=windows GOARCH=amd64 go build -o exchange-relayer.exe
+GOOS=darwin GOARCH=amd64 go build -o exchange-relayer-macos
 ```
 
 ### Development Workflow

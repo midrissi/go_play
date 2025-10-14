@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"binance-go/exchanges"
-	"binance-go/websocket"
+	"exchange-relayer/exchanges"
+	"exchange-relayer/websocket"
 )
 
 // BinanceExchange implements the Exchange interface for Binance

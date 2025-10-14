@@ -1,4 +1,4 @@
-module binance-go
+module exchange-relayer
 
 go 1.25.2
 

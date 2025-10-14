@@ -8,9 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"binance-go/exchanges"
-	"binance-go/exchanges/binance"
-	"binance-go/exchanges/hyperliquid"
+	"exchange-relayer/exchanges"
+	"exchange-relayer/exchanges/binance"
+	"exchange-relayer/exchanges/hyperliquid"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -23,7 +23,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "binance-go",
+	Use:   "exchange-relayer",
 	Short: "A CLI tool to fetch candle streams from various exchanges",
 	Long:  `A flexible CLI tool that supports fetching candle (candlestick) data from multiple exchanges including Binance and Hyperliquid.`,
 	Run:   run,
