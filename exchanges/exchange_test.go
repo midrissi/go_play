@@ -1,0 +1,141 @@
+package exchanges
+
+import (
+	"context"
+	"testing"
+	"time"
+)
+
+// MockExchange is a mock implementation of the Exchange interface for testing
+type MockExchange struct {
+	supportedIntervals []string
+	supportedSymbols   []string
+}
+
+func NewMockExchange() Exchange {
+	return &MockExchange{
+		supportedIntervals: []string{"1m", "5m", "15m", "1h", "4h", "1d"},
+		supportedSymbols:   []string{"BTCUSDT", "ETHUSDT", "BNBUSDT"},
+	}
+}
+
+func (m *MockExchange) StreamKlines(ctx context.Context, symbols []string, interval string, handler KlineHandler) error {
+	// Simulate streaming by sending a few mock klines
+	for i := 0; i < 3; i++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			kline := Kline{
+				Symbol:    symbols[0],
+				OpenTime:  time.Now().Add(-time.Duration(i) * time.Minute),
+				CloseTime: time.Now().Add(-time.Duration(i-1) * time.Minute),
+				Open:      50000.0 + float64(i),
+				High:      50100.0 + float64(i),
+				Low:       49900.0 + float64(i),
+				Close:     50050.0 + float64(i),
+				Volume:    1000.0 + float64(i)*100,
+			}
+			handler(kline)
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+	return nil
+}
+
+func (m *MockExchange) GetSupportedIntervals() []string {
+	return m.supportedIntervals
+}
+
+func (m *MockExchange) GetSupportedSymbols() ([]string, error) {
+	return m.supportedSymbols, nil
+}
+
+func (m *MockExchange) ValidateSymbol(symbol string) error {
+	for _, s := range m.supportedSymbols {
+		if s == symbol {
+			return nil
+		}
+	}
+	return &ValidationError{Field: "symbol", Value: symbol, Message: "unsupported symbol"}
+}
+
+func (m *MockExchange) ValidateInterval(interval string) error {
+	for _, i := range m.supportedIntervals {
+		if i == interval {
+			return nil
+		}
+	}
+	return &ValidationError{Field: "interval", Value: interval, Message: "unsupported interval"}
+}
+
+// ValidationError represents a validation error
+type ValidationError struct {
+	Field   string
+	Value   string
+	Message string
+}
+
+func (e *ValidationError) Error() string {
+	return e.Message
+}
+
+// TestExchangeInterface tests the basic functionality of the Exchange interface
+func TestExchangeInterface(t *testing.T) {
+	exchange := NewMockExchange()
+
+	// Test GetSupportedIntervals
+	intervals := exchange.GetSupportedIntervals()
+	if len(intervals) == 0 {
+		t.Error("Expected supported intervals, got empty slice")
+	}
+
+	// Test GetSupportedSymbols
+	symbols, err := exchange.GetSupportedSymbols()
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+	if len(symbols) == 0 {
+		t.Error("Expected supported symbols, got empty slice")
+	}
+
+	// Test ValidateSymbol
+	err = exchange.ValidateSymbol("BTCUSDT")
+	if err != nil {
+		t.Errorf("Expected no error for valid symbol, got %v", err)
+	}
+
+	err = exchange.ValidateSymbol("INVALID")
+	if err == nil {
+		t.Error("Expected error for invalid symbol, got nil")
+	}
+
+	// Test ValidateInterval
+	err = exchange.ValidateInterval("1m")
+	if err != nil {
+		t.Errorf("Expected no error for valid interval, got %v", err)
+	}
+
+	err = exchange.ValidateInterval("invalid")
+	if err == nil {
+		t.Error("Expected error for invalid interval, got nil")
+	}
+
+	// Test StreamKlines
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	klines := make([]Kline, 0)
+	handler := func(kline Kline) {
+		klines = append(klines, kline)
+	}
+
+	err = exchange.StreamKlines(ctx, []string{"BTCUSDT"}, "1m", handler)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if len(klines) == 0 {
+		t.Error("Expected klines to be received, got none")
+	}
+}

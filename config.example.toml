@@ -1,0 +1,23 @@
+# Example configuration file for binance-go
+# This file can be used to set default values for the application
+
+# Default exchange to use
+exchange = "binance"
+
+# Default symbols to fetch (comma-separated)
+symbols = ["BTCUSDT", "ETHUSDT"]
+
+# Default kline interval
+interval = "1m"
+
+# Examples for different exchanges:
+
+# Binance configuration
+[binance]
+symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
+interval = "5m"
+
+# Hyperliquid configuration  
+[hyperliquid]
+symbols = ["BTC", "ETH", "SOL"]
+interval = "1h"

@@ -1,0 +1,207 @@
+# Binance Go - Multi-Exchange Kline Streamer
+
+A flexible Go CLI tool for fetching real-time kline (candlestick) data from multiple cryptocurrency exchanges.
+
+## Features
+
+- **Multi-Exchange Support**: Currently supports Binance and Hyperliquid
+- **Real-time Streaming**: WebSocket-based streaming for live kline data
+- **Resilient Connections**: Automatic reconnection with exponential backoff
+- **Connection Health Monitoring**: Ping/pong keep-alive and timeout handling
+- **Flexible Architecture**: Easy to add new exchanges
+- **CLI Interface**: Simple command-line interface with configurable options
+- **Graceful Shutdown**: Proper handling of interrupts and cleanup
+
+## Supported Exchanges
+
+- **Binance**: Full support for all major trading pairs
+- **Hyperliquid**: Support for major cryptocurrencies
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd binance-go
+```
+
+2. Install dependencies:
+```bash
+go mod tidy
+```
+
+3. Build the application:
+```bash
+go build -o binance-go
+```
+
+## Usage
+
+### Basic Usage
+
+```bash
+# Stream BTCUSDT 1-minute klines from Binance
+./binance-go --exchange binance --symbols BTCUSDT --interval 1m
+
+# Stream multiple symbols
+./binance-go --exchange binance --symbols BTCUSDT,ETHUSDT,BNBUSDT --interval 5m
+
+# Use Hyperliquid exchange
+./binance-go --exchange hyperliquid --symbols BTC,ETH,SOL --interval 1h
+```
+
+### Command Line Options
+
+- `--exchange, -e`: Exchange to use (binance, hyperliquid)
+- `--symbols, -s`: Trading symbols to fetch (comma-separated)
+- `--interval, -i`: Kline interval (1m, 5m, 15m, 1h, 4h, 1d)
+
+### Examples
+
+```bash
+# Binance examples
+./binance-go -e binance -s BTCUSDT -i 1m
+./binance-go -e binance -s BTCUSDT,ETHUSDT -i 5m
+./binance-go -e binance -s BTCUSDT -i 1h
+
+# Hyperliquid examples
+./binance-go -e hyperliquid -s BTC -i 1m
+./binance-go -e hyperliquid -s BTC,ETH,SOL -i 15m
+./binance-go -e hyperliquid -s BTC -i 1d
+```
+
+## Architecture
+
+The project follows a clean architecture pattern with the following structure:
+
+```
+├── exchanges/
+│   ├── exchange.go          # Exchange interface definition
+│   ├── binance/
+│   │   └── binance.go       # Binance implementation
+│   └── hyperliquid/
+│       └── hyperliquid.go   # Hyperliquid implementation
+├── websocket/
+│   └── resilient.go         # Resilient WebSocket wrapper
+├── main.go                  # CLI application
+└── go.mod                   # Go module definition
+```
+
+### Exchange Interface
+
+All exchanges implement the `exchanges.Exchange` interface:
+
+```go
+type Exchange interface {
+    StreamKlines(ctx context.Context, symbols []string, interval string, handler KlineHandler) error
+    GetSupportedIntervals() []string
+    GetSupportedSymbols() ([]string, error)
+    ValidateSymbol(symbol string) error
+    ValidateInterval(interval string) error
+}
+```
+
+### Adding New Exchanges
+
+To add a new exchange:
+
+1. Create a new package under `exchanges/`
+2. Implement the `Exchange` interface
+3. Add the exchange to the main application's switch statement
+4. Update the CLI help text
+
+Example for a new exchange:
+
+```go
+package newexchange
+
+import "binance-go/exchanges"
+
+type NewExchange struct {
+    // exchange-specific fields
+}
+
+func New() exchanges.Exchange {
+    return &NewExchange{}
+}
+
+// Implement all Exchange interface methods...
+```
+
+### Resilient WebSocket Module
+
+The `websocket` package provides a robust WebSocket wrapper with:
+
+- **Automatic Reconnection**: Handles connection drops gracefully
+- **Exponential Backoff**: Smart retry timing to avoid overwhelming servers
+- **Health Monitoring**: Ping/pong keep-alive mechanism
+- **Event Handlers**: Customizable callbacks for connection events
+- **Thread Safety**: Concurrent access protection
+
+Example usage:
+
+```go
+config := websocket.DefaultConfig("wss://api.example.com/ws")
+config.ReconnectInterval = 2 * time.Second
+config.MaxReconnectDelay = 60 * time.Second
+
+ws := websocket.NewResilientWebSocket(config)
+ws.SetMessageHandler(func(data []byte) error {
+    // Handle incoming messages
+    return nil
+})
+ws.SetConnectHandler(func() {
+    // Connection established
+})
+ws.Connect()
+```
+
+## Configuration
+
+The application supports configuration via:
+
+- Command line flags (highest priority)
+- Environment variables
+- Configuration files (future enhancement)
+
+## Error Handling
+
+The application includes comprehensive error handling and resilient connections:
+
+- **Automatic Reconnection**: Exponential backoff with configurable retry limits
+- **Connection Health Monitoring**: Ping/pong keep-alive mechanism
+- **Timeout Handling**: Configurable read/write timeouts
+- **Connection State Management**: Real-time connection status tracking
+- **Graceful Degradation**: Continues operation during temporary network issues
+- **Invalid Data Handling**: Skips malformed messages without crashing
+- **Graceful Shutdown**: Proper cleanup on interrupt signals
+
+### Resilient WebSocket Features
+
+- **Exponential Backoff**: Reconnection delays increase progressively (1s, 2s, 4s, 8s, etc.)
+- **Maximum Retry Delay**: Configurable upper limit for backoff delays
+- **Infinite Retries**: Option to retry indefinitely or set maximum attempts
+- **Connection Monitoring**: Automatic ping/pong to detect dead connections
+- **Event Handlers**: Customizable handlers for connect/disconnect/error events
+- **Thread-Safe**: Concurrent access protection with mutexes
+
+## Development
+
+### Running Tests
+
+```bash
+go test ./...
+```
+
+### Building for Different Platforms
+
+```bash
+# Linux
+GOOS=linux GOARCH=amd64 go build -o binance-go-linux
+
+# Windows
+GOOS=windows GOARCH=amd64 go build -o binance-go.exe
+
+# macOS
+GOOS=darwin GOARCH=amd64 go build -o binance-go-macos
+```

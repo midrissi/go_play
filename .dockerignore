@@ -1,0 +1,42 @@
+# Git files
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Build artifacts
+binance-go
+binance-go-*
+*.exe
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# Logs
+*.log
+
+# Test files
+*_test.go
+test/
+
+# Temporary files
+tmp/
+temp/
+
+# Configuration examples
+config.example.toml
+
+# Makefile (not needed in container)
+Makefile
