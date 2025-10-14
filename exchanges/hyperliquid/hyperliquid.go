@@ -18,7 +18,7 @@ type HyperliquidExchange struct {
 	baseURL    string
 	wsBaseURL  string
 	httpClient *http.Client
-	ws         *websocket.ResilientWebSocket
+	ws         *websocket.WebSocketClient
 }
 
 // New creates a new Hyperliquid exchange instance
@@ -56,7 +56,7 @@ func (h *HyperliquidExchange) StreamKlines(ctx context.Context, symbols []string
 	config.MaxReconnectAttempts = 0 // Infinite retries
 
 	// Create resilient WebSocket
-	h.ws = websocket.NewResilientWebSocket(config)
+	h.ws = websocket.NewWebSocketClient(config)
 
 	// Set up message handler
 	h.ws.SetMessageHandler(func(message []byte) error {

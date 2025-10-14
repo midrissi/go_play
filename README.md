@@ -205,7 +205,7 @@ config := websocket.DefaultConfig("wss://api.example.com/ws")
 config.ReconnectInterval = 2 * time.Second
 config.MaxReconnectDelay = 60 * time.Second
 
-ws := websocket.NewResilientWebSocket(config)
+ws := websocket.NewWebSocketClient(config)
 ws.SetMessageHandler(func(data []byte) error {
     // Handle incoming messages
     return nil

@@ -15,7 +15,7 @@ import (
 // BinanceExchange implements the Exchange interface for Binance
 type BinanceExchange struct {
 	baseURL string
-	ws      *websocket.ResilientWebSocket
+	ws      *websocket.WebSocketClient
 }
 
 // New creates a new Binance exchange instance
@@ -49,7 +49,7 @@ func (b *BinanceExchange) StreamKlines(ctx context.Context, symbols []string, in
 	config.MaxReconnectAttempts = 0 // Infinite retries
 
 	// Create resilient WebSocket
-	b.ws = websocket.NewResilientWebSocket(config)
+	b.ws = websocket.NewWebSocketClient(config)
 
 	// Set up message handler
 	b.ws.SetMessageHandler(func(message []byte) error {

@@ -38,8 +38,8 @@ func DefaultConfig(url string) *Config {
 	}
 }
 
-// ResilientWebSocket wraps gorilla/websocket with reconnection logic
-type ResilientWebSocket struct {
+// WebSocketClient wraps gorilla/websocket with reconnection logic
+type WebSocketClient struct {
 	config      *Config
 	conn        *websocket.Conn
 	connMutex   sync.RWMutex
@@ -61,11 +61,11 @@ type ResilientWebSocket struct {
 	disconnectHandler func()
 }
 
-// NewResilientWebSocket creates a new resilient WebSocket connection
-func NewResilientWebSocket(config *Config) *ResilientWebSocket {
+// NewWebSocketClient creates a new resilient WebSocket connection
+func NewWebSocketClient(config *Config) *WebSocketClient {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	return &ResilientWebSocket{
+	return &WebSocketClient{
 		config:      config,
 		ctx:         ctx,
 		cancel:      cancel,
@@ -75,27 +75,27 @@ func NewResilientWebSocket(config *Config) *ResilientWebSocket {
 }
 
 // SetMessageHandler sets the message handler function
-func (rws *ResilientWebSocket) SetMessageHandler(handler func([]byte) error) {
+func (rws *WebSocketClient) SetMessageHandler(handler func([]byte) error) {
 	rws.messageHandler = handler
 }
 
 // SetErrorHandler sets the error handler function
-func (rws *ResilientWebSocket) SetErrorHandler(handler func(error)) {
+func (rws *WebSocketClient) SetErrorHandler(handler func(error)) {
 	rws.errorHandler = handler
 }
 
 // SetConnectHandler sets the connection handler function
-func (rws *ResilientWebSocket) SetConnectHandler(handler func()) {
+func (rws *WebSocketClient) SetConnectHandler(handler func()) {
 	rws.connectHandler = handler
 }
 
 // SetDisconnectHandler sets the disconnection handler function
-func (rws *ResilientWebSocket) SetDisconnectHandler(handler func()) {
+func (rws *WebSocketClient) SetDisconnectHandler(handler func()) {
 	rws.disconnectHandler = handler
 }
 
 // Connect establishes the initial WebSocket connection
-func (rws *ResilientWebSocket) Connect() error {
+func (rws *WebSocketClient) Connect() error {
 	rws.wg.Add(1)
 	go rws.connectionManager()
 
@@ -109,7 +109,7 @@ func (rws *ResilientWebSocket) Connect() error {
 }
 
 // Disconnect closes the WebSocket connection
-func (rws *ResilientWebSocket) Disconnect() error {
+func (rws *WebSocketClient) Disconnect() error {
 	rws.cancel()
 	close(rws.stopCh)
 	rws.wg.Wait()
@@ -127,7 +127,7 @@ func (rws *ResilientWebSocket) Disconnect() error {
 }
 
 // WriteMessage sends a message through the WebSocket connection
-func (rws *ResilientWebSocket) WriteMessage(messageType int, data []byte) error {
+func (rws *WebSocketClient) WriteMessage(messageType int, data []byte) error {
 	rws.connMutex.RLock()
 	conn := rws.conn
 	isConnected := rws.isConnected
@@ -144,7 +144,7 @@ func (rws *ResilientWebSocket) WriteMessage(messageType int, data []byte) error 
 }
 
 // WriteJSON sends a JSON message through the WebSocket connection
-func (rws *ResilientWebSocket) WriteJSON(v interface{}) error {
+func (rws *WebSocketClient) WriteJSON(v interface{}) error {
 	rws.connMutex.RLock()
 	conn := rws.conn
 	isConnected := rws.isConnected
@@ -161,28 +161,28 @@ func (rws *ResilientWebSocket) WriteJSON(v interface{}) error {
 }
 
 // IsConnected returns the current connection status
-func (rws *ResilientWebSocket) IsConnected() bool {
+func (rws *WebSocketClient) IsConnected() bool {
 	rws.connMutex.RLock()
 	defer rws.connMutex.RUnlock()
 	return rws.isConnected
 }
 
 // GetReconnectCount returns the number of reconnection attempts
-func (rws *ResilientWebSocket) GetReconnectCount() int {
+func (rws *WebSocketClient) GetReconnectCount() int {
 	rws.connMutex.RLock()
 	defer rws.connMutex.RUnlock()
 	return rws.reconnectCount
 }
 
 // GetLastError returns the last connection error
-func (rws *ResilientWebSocket) GetLastError() error {
+func (rws *WebSocketClient) GetLastError() error {
 	rws.connMutex.RLock()
 	defer rws.connMutex.RUnlock()
 	return rws.lastError
 }
 
 // connectionManager manages the WebSocket connection lifecycle
-func (rws *ResilientWebSocket) connectionManager() {
+func (rws *WebSocketClient) connectionManager() {
 	defer rws.wg.Done()
 
 	for {
@@ -198,7 +198,7 @@ func (rws *ResilientWebSocket) connectionManager() {
 }
 
 // attemptConnection attempts to establish a WebSocket connection
-func (rws *ResilientWebSocket) attemptConnection() {
+func (rws *WebSocketClient) attemptConnection() {
 	// Check if we should attempt reconnection
 	if rws.config.MaxReconnectAttempts > 0 && rws.reconnectCount >= rws.config.MaxReconnectAttempts {
 		log.Printf("Max reconnection attempts (%d) reached", rws.config.MaxReconnectAttempts)
@@ -255,7 +255,7 @@ func (rws *ResilientWebSocket) attemptConnection() {
 }
 
 // calculateBackoffDelay calculates the delay for exponential backoff
-func (rws *ResilientWebSocket) calculateBackoffDelay() time.Duration {
+func (rws *WebSocketClient) calculateBackoffDelay() time.Duration {
 	if rws.reconnectCount == 0 {
 		return 0
 	}
@@ -280,7 +280,7 @@ func pow(x, y float64) float64 {
 }
 
 // handleConnectionError handles connection errors and triggers reconnection
-func (rws *ResilientWebSocket) handleConnectionError(err error) {
+func (rws *WebSocketClient) handleConnectionError(err error) {
 	rws.connMutex.Lock()
 	rws.isConnected = false
 	rws.lastError = err
@@ -314,7 +314,7 @@ func (rws *ResilientWebSocket) handleConnectionError(err error) {
 }
 
 // pingPongLoop sends periodic ping messages
-func (rws *ResilientWebSocket) pingPongLoop() {
+func (rws *WebSocketClient) pingPongLoop() {
 	defer rws.wg.Done()
 
 	ticker := time.NewTicker(rws.config.PingInterval)
@@ -347,7 +347,7 @@ func (rws *ResilientWebSocket) pingPongLoop() {
 }
 
 // readLoop reads messages from the WebSocket connection
-func (rws *ResilientWebSocket) readLoop() {
+func (rws *WebSocketClient) readLoop() {
 	defer rws.wg.Done()
 
 	for {
