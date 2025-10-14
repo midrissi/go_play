@@ -24,15 +24,15 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "binance-go",
-	Short: "A CLI tool to fetch kline streams from various exchanges",
-	Long:  `A flexible CLI tool that supports fetching kline (candlestick) data from multiple exchanges including Binance and Hyperliquid.`,
+	Short: "A CLI tool to fetch candle streams from various exchanges",
+	Long:  `A flexible CLI tool that supports fetching candle (candlestick) data from multiple exchanges including Binance and Hyperliquid.`,
 	Run:   run,
 }
 
 func init() {
 	rootCmd.Flags().StringVarP(&exchangeName, "exchange", "e", "binance", "Exchange to use (binance, hyperliquid)")
 	rootCmd.Flags().StringSliceVarP(&symbols, "symbols", "s", []string{"BTCUSDT"}, "Trading symbols to fetch")
-	rootCmd.Flags().StringVarP(&interval, "interval", "i", "1m", "Kline interval (1m, 5m, 15m, 1h, 4h, 1d)")
+	rootCmd.Flags().StringVarP(&interval, "interval", "i", "1m", "Candle interval (1m, 5m, 15m, 1h, 4h, 1d)")
 
 	viper.BindPFlag("exchange", rootCmd.Flags().Lookup("exchange"))
 	viper.BindPFlag("symbols", rootCmd.Flags().Lookup("symbols"))
@@ -63,24 +63,24 @@ func run(cmd *cobra.Command, args []string) {
 		log.Fatalf("Unsupported exchange: %s", exchangeName)
 	}
 
-	fmt.Printf("Starting kline stream from %s for symbols: %v with interval: %s\n",
+	fmt.Printf("Starting candle stream from %s for symbols: %v with interval: %s\n",
 		exchangeName, symbols, interval)
 
 	// Start streaming
-	err := exchange.StreamKlines(ctx, symbols, interval, func(kline exchanges.Kline) {
+	err := exchange.StreamCandles(ctx, symbols, interval, func(candle exchanges.Candle) {
 		fmt.Printf("[%s] %s: O=%.8f H=%.8f L=%.8f C=%.8f V=%.8f\n",
-			kline.Symbol,
-			kline.OpenTime.Format("2006-01-02 15:04:05"),
-			kline.Open,
-			kline.High,
-			kline.Low,
-			kline.Close,
-			kline.Volume,
+			candle.Symbol,
+			candle.OpenTime.Format("2006-01-02 15:04:05"),
+			candle.Open,
+			candle.High,
+			candle.Low,
+			candle.Close,
+			candle.Volume,
 		)
 	})
 
 	if err != nil {
-		log.Fatalf("Error streaming klines: %v", err)
+		log.Fatalf("Error streaming candles: %v", err)
 	}
 }
 

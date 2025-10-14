@@ -7,7 +7,7 @@ exchange = "binance"
 # Default symbols to fetch (comma-separated)
 symbols = ["BTCUSDT", "ETHUSDT"]
 
-# Default kline interval
+# Default candle interval
 interval = "1m"
 
 # Examples for different exchanges:

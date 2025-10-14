@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-// Kline represents a candlestick data point
-type Kline struct {
+// Candle represents a candlestick data point
+type Candle struct {
 	Symbol    string    `json:"symbol"`
 	OpenTime  time.Time `json:"open_time"`
 	CloseTime time.Time `json:"close_time"`
@@ -17,16 +17,16 @@ type Kline struct {
 	Volume    float64   `json:"volume"`
 }
 
-// KlineHandler is a function type for handling incoming kline data
-type KlineHandler func(Kline)
+// CandleHandler is a function type for handling incoming candle data
+type CandleHandler func(Candle)
 
 // Exchange defines the interface that all exchange implementations must satisfy
 type Exchange interface {
-	// StreamKlines starts streaming kline data for the given symbols and interval
-	// The handler function will be called for each kline update
-	StreamKlines(ctx context.Context, symbols []string, interval string, handler KlineHandler) error
+	// StreamCandles starts streaming candle data for the given symbols and interval
+	// The handler function will be called for each candle update
+	StreamCandles(ctx context.Context, symbols []string, interval string, handler CandleHandler) error
 
-	// GetSupportedIntervals returns the list of supported kline intervals
+	// GetSupportedIntervals returns the list of supported candle intervals
 	GetSupportedIntervals() []string
 
 	// GetSupportedSymbols returns the list of supported trading symbols

@@ -19,14 +19,14 @@ func NewMockExchange() Exchange {
 	}
 }
 
-func (m *MockExchange) StreamKlines(ctx context.Context, symbols []string, interval string, handler KlineHandler) error {
-	// Simulate streaming by sending a few mock klines
+func (m *MockExchange) StreamCandles(ctx context.Context, symbols []string, interval string, handler CandleHandler) error {
+	// Simulate streaming by sending a few mock candles
 	for i := 0; i < 3; i++ {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			kline := Kline{
+			candle := Candle{
 				Symbol:    symbols[0],
 				OpenTime:  time.Now().Add(-time.Duration(i) * time.Minute),
 				CloseTime: time.Now().Add(-time.Duration(i-1) * time.Minute),
@@ -36,7 +36,7 @@ func (m *MockExchange) StreamKlines(ctx context.Context, symbols []string, inter
 				Close:     50050.0 + float64(i),
 				Volume:    1000.0 + float64(i)*100,
 			}
-			handler(kline)
+			handler(candle)
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
@@ -121,21 +121,21 @@ func TestExchangeInterface(t *testing.T) {
 		t.Error("Expected error for invalid interval, got nil")
 	}
 
-	// Test StreamKlines
+	// Test StreamCandles
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	klines := make([]Kline, 0)
-	handler := func(kline Kline) {
-		klines = append(klines, kline)
+	candles := make([]Candle, 0)
+	handler := func(candle Candle) {
+		candles = append(candles, candle)
 	}
 
-	err = exchange.StreamKlines(ctx, []string{"BTCUSDT"}, "1m", handler)
+	err = exchange.StreamCandles(ctx, []string{"BTCUSDT"}, "1m", handler)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
 
-	if len(klines) == 0 {
-		t.Error("Expected klines to be received, got none")
+	if len(candles) == 0 {
+		t.Error("Expected candles to be received, got none")
 	}
 }

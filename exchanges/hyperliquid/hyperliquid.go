@@ -32,8 +32,8 @@ func New() exchanges.Exchange {
 	}
 }
 
-// StreamKlines starts streaming kline data from Hyperliquid
-func (h *HyperliquidExchange) StreamKlines(ctx context.Context, symbols []string, interval string, handler exchanges.KlineHandler) error {
+// StreamCandles starts streaming candle data from Hyperliquid
+func (h *HyperliquidExchange) StreamCandles(ctx context.Context, symbols []string, interval string, handler exchanges.CandleHandler) error {
 	// Validate inputs
 	if err := h.ValidateInterval(interval); err != nil {
 		return fmt.Errorf("invalid interval: %w", err)
@@ -106,24 +106,24 @@ func (h *HyperliquidExchange) subscribeToStreams(symbols []string, interval stri
 		if err := h.ws.WriteJSON(subscribeMsg); err != nil {
 			fmt.Printf("⚠️  Failed to subscribe to %s: %v\n", symbol, err)
 		} else {
-			fmt.Printf("📡 Subscribed to %s kline stream\n", symbol)
+			fmt.Printf("📡 Subscribed to %s candle stream\n", symbol)
 		}
 	}
 }
 
 // handleMessage processes incoming WebSocket messages
-func (h *HyperliquidExchange) handleMessage(message []byte, handler exchanges.KlineHandler) error {
+func (h *HyperliquidExchange) handleMessage(message []byte, handler exchanges.CandleHandler) error {
 	var response map[string]interface{}
 	if err := json.Unmarshal(message, &response); err != nil {
 		return nil // Skip invalid messages
 	}
 
-	// Check if this is kline data
+	// Check if this is candle data
 	if data, ok := response["data"].(map[string]interface{}); ok {
 		if candleData, ok := data["candle"].(map[string]interface{}); ok {
-			kline := h.parseKline(candleData)
-			if kline.Symbol != "" {
-				handler(kline)
+			candle := h.parseCandle(candleData)
+			if candle.Symbol != "" {
+				handler(candle)
 			}
 		}
 	}
@@ -131,53 +131,53 @@ func (h *HyperliquidExchange) handleMessage(message []byte, handler exchanges.Kl
 	return nil
 }
 
-// parseKline parses kline data from Hyperliquid response
-func (h *HyperliquidExchange) parseKline(data map[string]interface{}) exchanges.Kline {
-	kline := exchanges.Kline{}
+// parseCandle parses candle data from Hyperliquid response
+func (h *HyperliquidExchange) parseCandle(data map[string]interface{}) exchanges.Candle {
+	candle := exchanges.Candle{}
 
 	if symbol, ok := data["coin"].(string); ok {
-		kline.Symbol = symbol
+		candle.Symbol = symbol
 	}
 
 	if startTime, ok := data["startTime"].(float64); ok {
-		kline.OpenTime = time.Unix(int64(startTime)/1000, 0)
+		candle.OpenTime = time.Unix(int64(startTime)/1000, 0)
 	}
 
 	if endTime, ok := data["endTime"].(float64); ok {
-		kline.CloseTime = time.Unix(int64(endTime)/1000, 0)
+		candle.CloseTime = time.Unix(int64(endTime)/1000, 0)
 	}
 
 	if open, ok := data["open"].(string); ok {
 		if val, err := strconv.ParseFloat(open, 64); err == nil {
-			kline.Open = val
+			candle.Open = val
 		}
 	}
 
 	if high, ok := data["high"].(string); ok {
 		if val, err := strconv.ParseFloat(high, 64); err == nil {
-			kline.High = val
+			candle.High = val
 		}
 	}
 
 	if low, ok := data["low"].(string); ok {
 		if val, err := strconv.ParseFloat(low, 64); err == nil {
-			kline.Low = val
+			candle.Low = val
 		}
 	}
 
 	if close, ok := data["close"].(string); ok {
 		if val, err := strconv.ParseFloat(close, 64); err == nil {
-			kline.Close = val
+			candle.Close = val
 		}
 	}
 
 	if volume, ok := data["volume"].(string); ok {
 		if val, err := strconv.ParseFloat(volume, 64); err == nil {
-			kline.Volume = val
+			candle.Volume = val
 		}
 	}
 
-	return kline
+	return candle
 }
 
 // convertInterval converts standard interval format to Hyperliquid format
@@ -200,7 +200,7 @@ func (h *HyperliquidExchange) convertInterval(interval string) string {
 	}
 }
 
-// GetSupportedIntervals returns supported kline intervals for Hyperliquid
+// GetSupportedIntervals returns supported candle intervals for Hyperliquid
 func (h *HyperliquidExchange) GetSupportedIntervals() []string {
 	return []string{
 		"1m", "5m", "15m", "1h", "4h", "1d",

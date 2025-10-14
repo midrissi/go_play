@@ -1,11 +1,11 @@
-# Binance Go - Multi-Exchange Kline Streamer
+# Binance Go - Multi-Exchange Candle Streamer
 
-A flexible Go CLI tool for fetching real-time kline (candlestick) data from multiple cryptocurrency exchanges.
+A flexible Go CLI tool for fetching real-time candle (candlestick) data from multiple cryptocurrency exchanges.
 
 ## Features
 
 - **Multi-Exchange Support**: Currently supports Binance and Hyperliquid
-- **Real-time Streaming**: WebSocket-based streaming for live kline data
+- **Real-time Streaming**: WebSocket-based streaming for live candle data
 - **Resilient Connections**: Automatic reconnection with exponential backoff
 - **Connection Health Monitoring**: Ping/pong keep-alive and timeout handling
 - **Flexible Architecture**: Easy to add new exchanges
@@ -100,7 +100,7 @@ make help
 ### Direct Binary Usage
 
 ```bash
-# Stream BTCUSDT 1-minute klines from Binance
+# Stream BTCUSDT 1-minute candles from Binance
 ./binance-go --exchange binance --symbols BTCUSDT --interval 1m
 
 # Stream multiple symbols
@@ -114,7 +114,7 @@ make help
 
 - `--exchange, -e`: Exchange to use (binance, hyperliquid)
 - `--symbols, -s`: Trading symbols to fetch (comma-separated)
-- `--interval, -i`: Kline interval (1m, 5m, 15m, 1h, 4h, 1d)
+- `--interval, -i`: Candle interval (1m, 5m, 15m, 1h, 4h, 1d)
 
 ### Examples
 
@@ -153,7 +153,7 @@ All exchanges implement the `exchanges.Exchange` interface:
 
 ```go
 type Exchange interface {
-    StreamKlines(ctx context.Context, symbols []string, interval string, handler KlineHandler) error
+    StreamCandles(ctx context.Context, symbols []string, interval string, handler CandleHandler) error
     GetSupportedIntervals() []string
     GetSupportedSymbols() ([]string, error)
     ValidateSymbol(symbol string) error

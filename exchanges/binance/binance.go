@@ -25,8 +25,8 @@ func New() exchanges.Exchange {
 	}
 }
 
-// StreamKlines starts streaming kline data from Binance
-func (b *BinanceExchange) StreamKlines(ctx context.Context, symbols []string, interval string, handler exchanges.KlineHandler) error {
+// StreamCandles starts streaming candle data from Binance
+func (b *BinanceExchange) StreamCandles(ctx context.Context, symbols []string, interval string, handler exchanges.CandleHandler) error {
 	// Validate inputs
 	if err := b.ValidateInterval(interval); err != nil {
 		return fmt.Errorf("invalid interval: %w", err)
@@ -89,7 +89,7 @@ func (b *BinanceExchange) subscribeToStreams(symbols []string, interval string) 
 	// Create subscription message
 	streams := make([]string, len(symbols))
 	for i, symbol := range symbols {
-		streams[i] = fmt.Sprintf("%s@kline_%s", strings.ToLower(symbol), interval)
+		streams[i] = fmt.Sprintf("%s@candle_%s", strings.ToLower(symbol), interval)
 	}
 
 	subscribeMsg := map[string]interface{}{
@@ -107,7 +107,7 @@ func (b *BinanceExchange) subscribeToStreams(symbols []string, interval string) 
 }
 
 // handleMessage processes incoming WebSocket messages
-func (b *BinanceExchange) handleMessage(message []byte, handler exchanges.KlineHandler) error {
+func (b *BinanceExchange) handleMessage(message []byte, handler exchanges.CandleHandler) error {
 	// First, try to parse as subscription response
 	var subResponse struct {
 		Result interface{} `json:"result"`
@@ -117,63 +117,63 @@ func (b *BinanceExchange) handleMessage(message []byte, handler exchanges.KlineH
 		return nil // Subscription confirmation received
 	}
 
-	// Parse as kline data (direct format from Binance)
-	var klineData map[string]interface{}
-	if err := json.Unmarshal(message, &klineData); err != nil {
+	// Parse as candle data (direct format from Binance)
+	var candleData map[string]interface{}
+	if err := json.Unmarshal(message, &candleData); err != nil {
 		return nil // Skip invalid messages
 	}
 
-	// Check if this is a kline event
-	if eventType, ok := klineData["e"].(string); !ok || eventType != "kline" {
+	// Check if this is a candle event
+	if eventType, ok := candleData["e"].(string); !ok || eventType != "kline" {
 		return nil
 	}
 
-	// Extract kline data
-	klineInfo, ok := klineData["k"].(map[string]interface{})
+	// Extract candle data
+	candleInfo, ok := candleData["k"].(map[string]interface{})
 	if !ok {
 		return nil
 	}
 
 	// Extract symbol
-	symbol, ok := klineData["s"].(string)
+	symbol, ok := candleData["s"].(string)
 	if !ok {
 		return nil
 	}
 
 	// Extract timestamps
-	startTime, ok := klineInfo["t"].(float64)
+	startTime, ok := candleInfo["t"].(float64)
 	if !ok {
 		return nil
 	}
-	endTime, ok := klineInfo["T"].(float64)
+	endTime, ok := candleInfo["T"].(float64)
 	if !ok {
 		return nil
 	}
 
 	// Extract prices and volume
-	openPrice, ok := klineInfo["o"].(string)
+	openPrice, ok := candleInfo["o"].(string)
 	if !ok {
 		return nil
 	}
-	highPrice, ok := klineInfo["h"].(string)
+	highPrice, ok := candleInfo["h"].(string)
 	if !ok {
 		return nil
 	}
-	lowPrice, ok := klineInfo["l"].(string)
+	lowPrice, ok := candleInfo["l"].(string)
 	if !ok {
 		return nil
 	}
-	closePrice, ok := klineInfo["c"].(string)
+	closePrice, ok := candleInfo["c"].(string)
 	if !ok {
 		return nil
 	}
-	volume, ok := klineInfo["v"].(string)
+	volume, ok := candleInfo["v"].(string)
 	if !ok {
 		return nil
 	}
 
-	// Parse kline data
-	kline := exchanges.Kline{
+	// Parse candle data
+	candle := exchanges.Candle{
 		Symbol:    symbol,
 		OpenTime:  time.Unix(int64(startTime)/1000, 0),
 		CloseTime: time.Unix(int64(endTime)/1000, 0),
@@ -181,27 +181,27 @@ func (b *BinanceExchange) handleMessage(message []byte, handler exchanges.KlineH
 
 	// Parse prices and volume
 	if open, err := strconv.ParseFloat(openPrice, 64); err == nil {
-		kline.Open = open
+		candle.Open = open
 	}
 	if high, err := strconv.ParseFloat(highPrice, 64); err == nil {
-		kline.High = high
+		candle.High = high
 	}
 	if low, err := strconv.ParseFloat(lowPrice, 64); err == nil {
-		kline.Low = low
+		candle.Low = low
 	}
 	if close, err := strconv.ParseFloat(closePrice, 64); err == nil {
-		kline.Close = close
+		candle.Close = close
 	}
 	if vol, err := strconv.ParseFloat(volume, 64); err == nil {
-		kline.Volume = vol
+		candle.Volume = vol
 	}
 
 	// Call handler
-	handler(kline)
+	handler(candle)
 	return nil
 }
 
-// GetSupportedIntervals returns supported kline intervals for Binance
+// GetSupportedIntervals returns supported candle intervals for Binance
 func (b *BinanceExchange) GetSupportedIntervals() []string {
 	return []string{
 		"1m", "3m", "5m", "15m", "30m",
