@@ -89,7 +89,7 @@ func (b *BinanceExchange) subscribeToStreams(symbols []string, interval string) 
 	// Create subscription message
 	streams := make([]string, len(symbols))
 	for i, symbol := range symbols {
-		streams[i] = fmt.Sprintf("%s@candle_%s", strings.ToLower(symbol), interval)
+		streams[i] = fmt.Sprintf("%s@kline_%s", strings.ToLower(symbol), interval)
 	}
 
 	subscribeMsg := map[string]interface{}{
