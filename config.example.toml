@@ -10,14 +10,21 @@ symbols = ["BTCUSDT", "ETHUSDT"]
 # Default candle interval
 interval = "1m"
 
+# Stream all supported symbols with all supported intervals (uses multiple websocket connections if needed)
+stream_all = false
+
 # Examples for different exchanges:
 
 # Binance configuration
 [binance]
 symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
 interval = "5m"
+# Binance allows up to 200 subscriptions per websocket connection
+max_subscriptions_per_connection = 200
 
 # Hyperliquid configuration  
 [hyperliquid]
 symbols = ["BTC", "ETH", "SOL"]
 interval = "1h"
+# Hyperliquid allows up to 50 subscriptions per websocket connection
+max_subscriptions_per_connection = 50

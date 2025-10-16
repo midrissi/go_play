@@ -6,6 +6,8 @@ A flexible Go CLI tool for fetching real-time candle (candlestick) data from mul
 
 - **Multi-Exchange Support**: Currently supports Binance and Hyperliquid
 - **Real-time Streaming**: WebSocket-based streaming for live candle data
+- **Stream All Symbols**: Option to stream ALL supported symbols simultaneously
+- **Multiple WebSocket Connections**: Automatically creates multiple connections when subscription limits are reached
 - **Resilient Connections**: Automatic reconnection with exponential backoff
 - **Connection Health Monitoring**: Ping/pong keep-alive and timeout handling
 - **Flexible Architecture**: Easy to add new exchanges
@@ -106,8 +108,14 @@ make help
 # Stream multiple symbols
 ./exchange-relayer --exchange binance --symbols BTCUSDT,ETHUSDT,BNBUSDT --interval 5m
 
+# Stream ALL supported symbols (uses multiple websocket connections if needed)
+./exchange-relayer --exchange binance --all --interval 1m
+
 # Use Hyperliquid exchange
 ./exchange-relayer --exchange hyperliquid --symbols BTC,ETH,SOL --interval 1h
+
+# Stream ALL Hyperliquid symbols
+./exchange-relayer --exchange hyperliquid --all --interval 5m
 ```
 
 ### Command Line Options
@@ -115,6 +123,7 @@ make help
 - `--exchange, -e`: Exchange to use (binance, hyperliquid)
 - `--symbols, -s`: Trading symbols to fetch (comma-separated)
 - `--interval, -i`: Candle interval (1m, 5m, 15m, 1h, 4h, 1d)
+- `--all, -a`: Stream ALL supported symbols (uses multiple websocket connections if needed)
 
 ### Examples
 
@@ -123,11 +132,13 @@ make help
 ./exchange-relayer -e binance -s BTCUSDT -i 1m
 ./exchange-relayer -e binance -s BTCUSDT,ETHUSDT -i 5m
 ./exchange-relayer -e binance -s BTCUSDT -i 1h
+./exchange-relayer -e binance --all -i 1m  # Stream ALL symbols
 
 # Hyperliquid examples
 ./exchange-relayer -e hyperliquid -s BTC -i 1m
 ./exchange-relayer -e hyperliquid -s BTC,ETH,SOL -i 15m
 ./exchange-relayer -e hyperliquid -s BTC -i 1d
+./exchange-relayer -e hyperliquid --all -i 5m  # Stream ALL symbols
 ```
 
 ## Architecture
@@ -154,12 +165,24 @@ All exchanges implement the `exchanges.Exchange` interface:
 ```go
 type Exchange interface {
     StreamCandles(ctx context.Context, symbols []string, interval string, handler CandleHandler) error
+    StreamAllCandles(ctx context.Context, interval string, handler CandleHandler) error
     GetSupportedIntervals() []string
     GetSupportedSymbols() ([]string, error)
     ValidateSymbol(symbol string) error
     ValidateInterval(interval string) error
+    GetMaxSubscriptionsPerConnection() int
 }
 ```
+
+### WebSocket Connection Management
+
+The system automatically manages multiple WebSocket connections when needed:
+
+- **Binance**: Up to 200 subscriptions per connection
+- **Hyperliquid**: Up to 50 subscriptions per connection
+- **Automatic Scaling**: Creates additional connections when symbol count exceeds limits
+- **Load Balancing**: Distributes symbols evenly across connections
+- **Connection Monitoring**: Each connection is monitored independently
 
 ### Adding New Exchanges
 

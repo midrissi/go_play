@@ -69,6 +69,36 @@ func (m *MockExchange) ValidateInterval(interval string) error {
 	return &ValidationError{Field: "interval", Value: interval, Message: "unsupported interval"}
 }
 
+func (m *MockExchange) StreamAllCandles(ctx context.Context, handler CandleHandler) error {
+	// Simulate streaming all symbols with all intervals by sending mock candles
+	for _, symbol := range m.supportedSymbols {
+		for range m.supportedIntervals {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				candle := Candle{
+					Symbol:    symbol,
+					OpenTime:  time.Now().Add(-time.Minute),
+					CloseTime: time.Now(),
+					Open:      50000.0,
+					High:      50100.0,
+					Low:       49900.0,
+					Close:     50050.0,
+					Volume:    1000.0,
+				}
+				handler(candle)
+				time.Sleep(10 * time.Millisecond) // Faster for testing
+			}
+		}
+	}
+	return nil
+}
+
+func (m *MockExchange) GetMaxSubscriptionsPerConnection() int {
+	return 10 // Mock value for testing
+}
+
 // ValidationError represents a validation error
 type ValidationError struct {
 	Field   string

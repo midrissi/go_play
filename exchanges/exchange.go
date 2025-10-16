@@ -26,6 +26,11 @@ type Exchange interface {
 	// The handler function will be called for each candle update
 	StreamCandles(ctx context.Context, symbols []string, interval string, handler CandleHandler) error
 
+	// StreamAllCandles starts streaming candle data for ALL supported symbols and ALL supported intervals
+	// Uses multiple websocket connections if necessary to handle subscription limits
+	// The handler function will be called for each candle update
+	StreamAllCandles(ctx context.Context, handler CandleHandler) error
+
 	// GetSupportedIntervals returns the list of supported candle intervals
 	GetSupportedIntervals() []string
 
@@ -37,4 +42,8 @@ type Exchange interface {
 
 	// ValidateInterval checks if an interval is valid for this exchange
 	ValidateInterval(interval string) error
+
+	// GetMaxSubscriptionsPerConnection returns the maximum number of subscriptions per websocket connection
+	// Returns 0 if unlimited
+	GetMaxSubscriptionsPerConnection() int
 }
