@@ -4,6 +4,9 @@
 # Default exchange to use
 exchange = "binance"
 
+# SQLite database file path
+db_path = "./data/exchange_relayer.db"
+
 # Default symbols to fetch (comma-separated)
 symbols = ["BTCUSDT", "ETHUSDT"]
 

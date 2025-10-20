@@ -11,6 +11,7 @@ import (
 	"exchange-relayer/exchanges"
 	"exchange-relayer/exchanges/binance"
 	"exchange-relayer/exchanges/hyperliquid"
+	"exchange-relayer/persistence"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -55,6 +56,15 @@ func run(cmd *cobra.Command, args []string) {
 		cancel()
 	}()
 
+	// Initialize persistence (SQLite via GORM)
+	dbPath := viper.GetString("db_path")
+	if dbPath == "" {
+		dbPath = "./data/exchange_relayer.db"
+	}
+	if err := persistence.Init(dbPath); err != nil {
+		log.Fatalf("failed to initialize database: %v", err)
+	}
+
 	// Create exchange client
 	var exchange exchanges.Exchange
 	switch exchangeName {
@@ -89,6 +99,18 @@ func run(cmd *cobra.Command, args []string) {
 				candle.Close,
 				candle.Volume,
 			)
+			_ = persistence.SaveCandle(persistence.CandleModel{
+				Exchange:  exchangeName,
+				Symbol:    candle.Symbol,
+				Interval:  interval,
+				OpenTime:  candle.OpenTime,
+				CloseTime: candle.CloseTime,
+				Open:      candle.Open,
+				High:      candle.High,
+				Low:       candle.Low,
+				Close:     candle.Close,
+				Volume:    candle.Volume,
+			})
 		})
 	} else {
 		fmt.Printf("Starting candle stream from %s for symbols: %v with interval: %s\n",
@@ -104,6 +126,18 @@ func run(cmd *cobra.Command, args []string) {
 				candle.Close,
 				candle.Volume,
 			)
+			_ = persistence.SaveCandle(persistence.CandleModel{
+				Exchange:  exchangeName,
+				Symbol:    candle.Symbol,
+				Interval:  interval,
+				OpenTime:  candle.OpenTime,
+				CloseTime: candle.CloseTime,
+				Open:      candle.Open,
+				High:      candle.High,
+				Low:       candle.Low,
+				Close:     candle.Close,
+				Volume:    candle.Volume,
+			})
 		})
 	}
 

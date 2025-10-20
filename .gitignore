@@ -42,3 +42,9 @@ Thumbs.db
 # Configuration files (keep example)
 config.toml
 .env
+
+# Database file
+data/*
+
+# keep file
+!.gitkeep
