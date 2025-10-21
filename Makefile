@@ -1,8 +1,19 @@
-.PHONY: build run clean test help docker-build docker-run docker-stop docker-clean docker-logs
+.PHONY: build run clean test help docker-build docker-run docker-stop docker-clean docker-logs proto build-server run-server
+
+# Generate protobuf files
+proto:
+	export PATH=$$PATH:$$(go env GOPATH)/bin && \
+	protoc --go_out=. --go_opt=paths=source_relative \
+		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+		proto/service.proto
 
 # Build the application
 build:
 	go build -o exchange-relayer
+
+# Build the gRPC server
+build-server: proto
+	go build -o grpc-server ./cmd/grpc-server
 
 # Run with default settings (Binance BTCUSDT 1m)
 run: build
@@ -16,9 +27,18 @@ run-binance: build
 run-hyperliquid: build
 	./exchange-relayer --exchange hyperliquid --symbols BTC,ETH --interval 1m
 
+# Run gRPC server with specific symbols
+run-server-symbols: build-server
+	./grpc-server --exchange binance --symbols BTCUSDT,ETHUSDT,ADAUSDT
+
+# Run gRPC server with all symbols
+run-server-all: build-server
+	./grpc-server --exchange binance --all
+
 # Clean build artifacts
 clean:
-	rm -f exchange-relayer
+	rm -f exchange-relayer grpc-server
+	rm -f proto/*.pb.go
 
 # Run tests
 test:
@@ -40,6 +60,11 @@ lint:
 deps:
 	go mod tidy
 	go mod download
+
+# Install protobuf dependencies
+deps-proto:
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 # Cross-compile for different platforms
 build-linux:
@@ -82,15 +107,20 @@ docker-clean:
 help:
 	@echo "Available targets:"
 	@echo "  build          					- Build the application"
+	@echo "  build-server   					- Build the gRPC server"
+	@echo "  proto          					- Generate protobuf files"
 	@echo "  run            					- Run with default settings"
 	@echo "  run-binance    					- Run with Binance example"
 	@echo "  run-hyperliquid 					- Run with Hyperliquid example"
+	@echo "  run-server-symbols 				- Run gRPC server with specific symbols"
+	@echo "  run-server-all 					- Run gRPC server with all symbols"
 	@echo "  clean          					- Clean build artifacts"
 	@echo "  test           					- Run tests"
 	@echo "  test-coverage  					- Run tests with coverage"
 	@echo "  fmt            					- Format code"
 	@echo "  lint           					- Lint code"
 	@echo "  deps           					- Install dependencies"
+	@echo "  deps-proto     					- Install protobuf dependencies"
 	@echo "  build-linux    					- Cross-compile for Linux"
 	@echo "  build-windows  					- Cross-compile for Windows"
 	@echo "  build-macos    					- Cross-compile for macOS"

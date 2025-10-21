@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package marketdata;
+
+option go_package = "exchange-relayer/proto";
+
+// MarketData service for streaming quotes
+service MarketData {
+  // StreamQuotes streams real-time quotes for requested symbols
+  rpc StreamQuotes(SubscribeRequest) returns (stream Quote);
+}
+
+// SubscribeRequest contains the symbols and interval the client wants to subscribe to
+message SubscribeRequest {
+  repeated string symbols = 1; // List of symbols to subscribe to (e.g., ["BTCUSDT", "ETHUSDT"])
+  string interval = 2;         // Candle interval (e.g., "1m", "5m", "1h", "1d")
+}
+
+// Quote represents a real-time quote for a trading symbol
+message Quote {
+  string symbol = 1;           // Trading symbol (e.g., "BTCUSDT")
+  double price = 2;            // Current price
+  double volume = 3;           // Volume
+  int64 timestamp = 4;         // Unix timestamp in milliseconds
+  string exchange = 5;         // Exchange name (e.g., "binance")
+}
