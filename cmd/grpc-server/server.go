@@ -16,6 +16,7 @@ import (
 	"exchange-relayer/exchanges"
 	"exchange-relayer/exchanges/binance"
 	"exchange-relayer/exchanges/hyperliquid"
+	"exchange-relayer/persistence"
 	pb "exchange-relayer/proto"
 
 	"google.golang.org/grpc"
@@ -154,6 +155,23 @@ func (s *MarketDataServer) startQuoteStreamingForInterval(ctx context.Context, i
 	// Start streaming in background
 	go func() {
 		err := s.exchange.StreamCandles(ctx, symbols, interval, func(candle exchanges.Candle) {
+			// Persist candle to database
+			if err := persistence.SaveCandle(persistence.CandleModel{
+				Exchange:  s.exchangeName,
+				Symbol:    candle.Symbol,
+				Interval:  interval,
+				OpenTime:  candle.OpenTime,
+				CloseTime: candle.CloseTime,
+				Open:      candle.Open,
+				High:      candle.High,
+				Low:       candle.Low,
+				Close:     candle.Close,
+				Volume:    candle.Volume,
+			}); err != nil {
+				log.Printf("Error persisting candle for %s %s: %v", candle.Symbol, interval, err)
+			}
+
+			// Send to quote channel for broadcasting
 			select {
 			case quoteChan <- candle:
 			case <-ctx.Done():
@@ -320,8 +338,14 @@ func main() {
 		exchange = flag.String("exchange", "binance", "Exchange to use (binance, hyperliquid)")
 		symbols  = flag.String("symbols", "", "Comma-separated list of symbols to track (e.g., BTCUSDT,ETHUSDT)")
 		all      = flag.Bool("all", false, "Track all supported symbols")
+		dbPath   = flag.String("db_path", "./data/exchange_relayer.db", "Path to SQLite database file")
 	)
 	flag.Parse()
+
+	// Initialize persistence (SQLite via GORM)
+	if err := persistence.Init(*dbPath); err != nil {
+		log.Fatalf("failed to initialize database: %v", err)
+	}
 
 	// Determine symbols to track
 	var symbolsToTrack []string
